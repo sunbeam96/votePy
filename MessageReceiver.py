@@ -2,18 +2,7 @@ import sys
 import zmq
 import logging
 import socket
-
-class MessageHandler:
-    def __init__(self):
-        self.topics = []
-
-    # def getMessageType(self, messageData):
-
-    # def addTopic(self, topic):
-        
-    def handleMessage(self, message):
-        topic, messagedata = message.split()
-
+from MessageHandler import MessageHandler
 
 class MessageReceiver:
     def __init__(self, topic, timeout):
