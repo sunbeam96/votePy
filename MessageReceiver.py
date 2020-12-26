@@ -39,5 +39,5 @@ class MessageReceiver:
         self.running = True
         while self.running:
             message = self.socket.recv()
-            handleMessage(message)
-            logger.info("Received message for %s" % topic)
+            # handleMessage(message)
+            # logger.info("Received message for %s" % topic)
