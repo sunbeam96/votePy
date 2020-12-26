@@ -1,11 +1,4 @@
-# votePy
-
-#######################
-#                     #
-#       votePy        #  
-#                     #
-# by: qba.lukaszczyk  #
-#######################
+# votePy by qba.lukaszczyk
 App for group p2p voting in your LAN
 
 This computer program is a part of my engineering thesis.
