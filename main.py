@@ -11,10 +11,6 @@ class WidgetGallery(QDialog):
         mainLayout = QGridLayout()
         mainLayout.addWidget(self.leftBox, 0, 0)
         mainLayout.addWidget(self.rightBox, 0, 1)
-        mainLayout.setRowStretch(1, 1)
-        mainLayout.setRowStretch(2, 1)
-        mainLayout.setColumnStretch(0, 1)
-        mainLayout.setColumnStretch(1, 1)
         self.setLayout(mainLayout)
 
         self.setWindowTitle("votePy")
