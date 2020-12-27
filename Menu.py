@@ -1,9 +1,14 @@
-from PyQt5.QtWidgets import (QVBoxLayout, QListWidget, QPushButton, QGroupBox, QGridLayout, QDialog, QMessageBox, QAction)
+from PyQt5.QtWidgets import (QVBoxLayout, QListWidget,
+    QPushButton, QGroupBox, QGridLayout, QDialog, QMessageBox,
+    QAction, QLabel, QListView)
+from PyQt5.QtCore import QStringListModel
+from PeerDetector import PeerDetector
 
 class Menu(QDialog):
     def __init__(self, parent=None):
         super(Menu, self).__init__(parent)
 
+        self.availableHosts = []
         self.createVotingList()
         self.createActionList()
 
@@ -14,6 +19,15 @@ class Menu(QDialog):
 
         self.setWindowTitle("votePy")
 
+    def showAvailableHosts(self):
+        self.hostsView = QListView()
+        model = QStringListModel(self.availableHosts)
+        self.hostsView.setModel(model)
+        self.hostsView.show()
+
+    def startup(self):
+        detector = PeerDetector()
+        self.availableHosts = detector.getHostsInLocalNetwork()
 
     def createVotingList(self):
         self.leftBox = QGroupBox("Ongoing votings")
@@ -30,7 +44,6 @@ class Menu(QDialog):
         box.setText("votePy by qba.lukaszczyk")
         box.exec_()
 
-
     def createActionList(self):
         self.rightBox = QGroupBox("Actions")
 
@@ -38,12 +51,17 @@ class Menu(QDialog):
         newVoteButton.setDefault(True)
 
         showParticipantsButton = QPushButton("Show participants")
+        showParticipantsButton.clicked.connect(self.showAvailableHosts)
 
         aboutButton = QPushButton("About")
         aboutButton.clicked.connect(self.showAboutBox)
+
+        detector = PeerDetector()
+        ipLabel = QLabel("My host IP address: %s" % (detector.getLocalhostAddress()))
         layout = QVBoxLayout()
         layout.addWidget(newVoteButton)
         layout.addWidget(showParticipantsButton)
         layout.addWidget(aboutButton)
+        layout.addWidget(ipLabel)
         layout.addStretch(1)
         self.rightBox.setLayout(layout)
