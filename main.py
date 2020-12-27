@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import (QApplication, QVBoxLayout, QListWidget, QPushButton, QGroupBox, QGridLayout, QDialog)
+from PyQt5.QtWidgets import (QApplication, QVBoxLayout, QListWidget, QPushButton, QGroupBox, QGridLayout, QDialog, QMessageBox, QAction)
 
 
 class WidgetGallery(QDialog):
@@ -15,6 +15,7 @@ class WidgetGallery(QDialog):
 
         self.setWindowTitle("votePy")
 
+
     def createVotingList(self):
         self.leftBox = QGroupBox("Ongoing votings")
         listWidget = QListWidget()
@@ -22,7 +23,14 @@ class WidgetGallery(QDialog):
         layout = QVBoxLayout()
         layout.addWidget(listWidget)
         layout.addStretch(1)
-        self.leftBox.setLayout(layout)    
+        self.leftBox.setLayout(layout)  
+
+    def showAboutBox(self):
+        box = QMessageBox()
+        box.setWindowTitle("About votePy")
+        box.setText("votePy by qba.lukaszczyk")
+        box.exec_()
+
 
     def createActionList(self):
         self.rightBox = QGroupBox("Actions")
@@ -31,6 +39,7 @@ class WidgetGallery(QDialog):
         firstButton.setDefault(True)
 
         secondButton = QPushButton("About")
+        secondButton.clicked.connect(self.showAboutBox)
         layout = QVBoxLayout()
         layout.addWidget(firstButton)
         layout.addWidget(secondButton)
