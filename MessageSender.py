@@ -1,13 +1,14 @@
 import zmq
+import sys
+import logging
 
-context = zmq.Context()
-socket = context.socket(zmq.REQ)
-socket.connect("tcp://localhost:5555")
 
-#  Do 10 requests, waiting each time for a respons
-def sendMsg(message):
-    print("Sending request %s …")
-    socket.send(message)
+class MessageSender:
+    def __init__(self, port):
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.PUB)
+        self.socket.bind("tcp://*:%s" % port)
 
-    response = socket.recv()
-    print("Received reply %s [ %s ]" % (response))
+    def sendMessage(self, topic, messageData):
+        logging.info("Sending message of topic %s" % (topic))
+        self.socket.send("%d %d" % (topic, messageData))

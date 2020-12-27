@@ -10,12 +10,14 @@ class MessageReceiver:
         self.topic = topic
         self.socket = self.context.socket(zmq.SUB)
         self.socket.setsockopt_string(zmq.SUBSCRIBE, topic)
+        self.availableHosts = []
 
     def connectToHost(self, senderAddress, port):
         logging.debug("Connection attempt ongoing")
         try:
             self.socket.connect((senderAddress, port))
             logging.info("Connection to tcp://%s:%s established" % (senderAddress, port))
+            self.availableHosts.append("%s:%s" % (senderAddress, port))
         except:
             logging.error("Error occured when connecting to tcp://%s:%s" % (senderAddress, port))
 
