@@ -5,11 +5,9 @@ import socket
 from MessageHandler import MessageHandler
 
 class MessageReceiver:
-    def __init__(self, topic, timeout):
+    def __init__(self, timeout):
         self.context = zmq.Context()
-        self.topic = topic
-        self.socket = self.context.socket(zmq.SUB)
-        self.socket.setsockopt_string(zmq.SUBSCRIBE, topic)
+        self.socket = self.context.socket(zmq.REQ)
         self.availableHosts = []
 
     def connectToHost(self, senderAddress, port):

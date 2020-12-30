@@ -12,6 +12,9 @@ class Menu(QDialog):
         self.createVotingList()
         self.createActionList()
 
+        self.showLoadingBox()
+        self.startup()
+
         mainLayout = QGridLayout()
         mainLayout.addWidget(self.leftBox, 0, 0)
         mainLayout.addWidget(self.rightBox, 0, 1)
@@ -36,7 +39,14 @@ class Menu(QDialog):
         layout = QVBoxLayout()
         layout.addWidget(listWidget)
         layout.addStretch(1)
-        self.leftBox.setLayout(layout)  
+        self.leftBox.setLayout(layout)
+
+    def showLoadingBox(self):
+        box = QMessageBox()
+        box.setWindowTitle("Starting votePy")
+        box.setText("Press OK to search for available hosts in your LAN.\nIt may take a while.")
+        box.exec_()
+
 
     def showAboutBox(self):
         box = QMessageBox()

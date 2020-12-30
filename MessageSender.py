@@ -6,9 +6,9 @@ import logging
 class MessageSender:
     def __init__(self, port):
         self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.PUB)
+        self.socket = self.context.socket(zmq.REP)
         self.socket.bind("tcp://*:%s" % port)
 
-    def sendMessage(self, topic, messageData):
-        logging.info("Sending message of topic %s" % (topic))
-        self.socket.send("%d %d" % (topic, messageData))
+    def sendMessage(self, messageData):
+        logging.info("Sending message")
+        self.socket.send("%d" % (messageData))
