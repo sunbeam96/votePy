@@ -15,9 +15,8 @@ class MessageReceiver:
         try:
             self.socket.connect((senderAddress, port))
             logging.info("Connection to tcp://%s:%s established" % (senderAddress, port))
-            self.availableHosts.append("%s:%s" % (senderAddress, port))
         except:
-            logging.error("Error occured when connecting to tcp://%s:%s" % (senderAddress, port))
+            logging.error("Error occured when connecting to tcp://%s:%s. Removing from available hosts." % (senderAddress, port))
 
     def stopReceiver(self):
         logging.info("Stopping receiver and closing socket on topic %s" % (self.topic))

@@ -1,34 +1,73 @@
 from PyQt5.QtWidgets import (QVBoxLayout, QListWidget,
-    QPushButton, QGroupBox, QGridLayout, QDialog, QMessageBox,
-    QAction, QLabel, QListView)
-from PyQt5.QtCore import QStringListModel
+    QPushButton, QGroupBox, QGridLayout, QMainWindow, QMessageBox,
+    QAction, QLabel, QListView, QWidget)
+from PyQt5.QtCore import QStringListModel, QObject, pyqtSignal, QThread
 from PeerDetector import PeerDetector
 
-class Menu(QDialog):
+class HostFinder(QObject):
+    finished = pyqtSignal()
+    availableHosts = []
+
+    def run(self):
+        detector = PeerDetector()
+        self.availableHosts = detector.getHostsInLocalNetwork()
+        self.finished.emit()
+
+class Menu(QMainWindow):
     def __init__(self, parent=None):
         super(Menu, self).__init__(parent)
 
         self.availableHosts = []
+        
+        self.showLoadingBox()
+        self.setupMenu()
+        hostFinder = self.createHostFinderThread()
+        hostFinder.run()
+
+    def updateAvailableHosts(self, availableHosts):
+        self.availableHosts = availableHosts
+
+    def createHostFinderThread(self):
+        hostFinderObject = HostFinder()
+        hostFinderThread = QThread()
+        hostFinderObject.moveToThread(hostFinderThread)
+        hostFinderThread.started.connect(hostFinderObject.run)
+        hostFinderObject.finished.connect(lambda: self.updateAvailableHosts(hostFinderObject.availableHosts))
+        hostFinderObject.finished.connect(hostFinderThread.quit)
+        hostFinderObject.finished.connect(hostFinderObject.deleteLater)
+        hostFinderThread.finished.connect(hostFinderThread.deleteLater)
+        return hostFinderThread
+
+    def setupMenu(self):
         self.createVotingList()
         self.createActionList()
 
-        self.showLoadingBox()
-        self.startup()
+        self.centralWidget = QWidget()
+        self.setCentralWidget(self.centralWidget)
 
         mainLayout = QGridLayout()
         mainLayout.addWidget(self.leftBox, 0, 0)
         mainLayout.addWidget(self.rightBox, 0, 1)
-        self.setLayout(mainLayout)
+        self.centralWidget.setLayout(mainLayout)
 
         self.setWindowTitle("votePy")
 
+    def showNoAvailableHostsBox(self):
+        box = QMessageBox()
+        box.setWindowTitle("Info")
+        box.setText("No hosts are currently available or search is still pending.")
+        box.exec_()
+
     def showAvailableHosts(self):
+        if not self.availableHosts:
+            self.showNoAvailableHostsBox()
+            return
         self.hostsView = QListView()
         model = QStringListModel(self.availableHosts)
         self.hostsView.setModel(model)
         self.hostsView.show()
 
-    def startup(self):
+    def findAvailableHosts(self):
         detector = PeerDetector()
         self.availableHosts = detector.getHostsInLocalNetwork()
 
@@ -44,7 +83,7 @@ class Menu(QDialog):
     def showLoadingBox(self):
         box = QMessageBox()
         box.setWindowTitle("Starting votePy")
-        box.setText("Press OK to search for available hosts in your LAN.\nIt may take a while.")
+        box.setText("Searching for available hosts may take a while.\nPlease wait.")
         box.exec_()
 
 
