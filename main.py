@@ -6,4 +6,5 @@ if __name__ == '__main__':
     guiApp = QApplication(sys.argv)
     gui = Menu()
     gui.show()
+    print("Executing gui")
     sys.exit(guiApp.exec_()) 

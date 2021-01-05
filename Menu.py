@@ -3,14 +3,19 @@ from PyQt5.QtWidgets import (QVBoxLayout, QListWidget,
     QAction, QLabel, QListView, QWidget)
 from PyQt5.QtCore import QStringListModel, QObject, pyqtSignal, QThread
 from PeerDetector import PeerDetector
+frin MessageReceiver import MessageReceiver
 
 class HostFinder(QObject):
     finished = pyqtSignal()
+    foundHosts = pyqtSignal(list)
     availableHosts = []
+    print("Host Finder created")
 
     def run(self):
-        detector = PeerDetector()
-        self.availableHosts = detector.getHostsInLocalNetwork()
+        print("Running run method and starting detector")
+        self.detector = PeerDetector()
+        self.availableHosts = self.detector.getHostsInLocalNetwork()
+        self.foundHosts.emit(self.availableHosts)
         self.finished.emit()
 
 class Menu(QMainWindow):
@@ -19,26 +24,57 @@ class Menu(QMainWindow):
 
         self.availableHosts = []
         
-        self.showLoadingBox()
-        self.setupMenu()
-        hostFinder = self.createHostFinderThread()
-        hostFinder.run()
+        print("Show loading box")
 
-    def updateAvailableHosts(self, availableHosts):
-        self.availableHosts = availableHosts
+        self.showLoadingBox()
+
+        print("Setting up menu")
+        self.setupMenu()
+
+        print("creating host finder thread")
+        self.hostFinder = self.createHostFinderThread()
+
+        print("Running host finder")
+        self.hostFinder.start()
+
+        print("Creating receiver service")
+        self.receiverService = self.createReceiverService()
+        print("Running receiver service")
+        self.receiverService.start()
+
+    def updateAvailableHosts(self, givenHosts):
+        self.availableHosts = givenHosts
+
+    def createReceiverService(self):
+        self.messageReceiverObject = MessageReceiver()
+        messageReceiverThread = QThread()
+        print("Moving message receiver to thread")
+        self.messageReceiverObject.moveToThread(messageReceiverThread)
+
+        print("Connecting signals for message receiver")
+        messageReceiverThread.started.connect(self.messageReceiverObject.run)
+        self.messageReceiverObject.foundHosts.connect(self.updateAvailableHosts)
+        self.messageReceiverObject.finished.connect(messageReceiverThread.quit)
+        self.messageReceiverObject.finished.connect(self.messageReceiverObject.deleteLater)
+        messageReceiverThread.finished.connect(messageReceiverThread.deleteLater)
+        return messageReceiverThread
 
     def createHostFinderThread(self):
-        hostFinderObject = HostFinder()
+        self.hostFinderObject = HostFinder()
         hostFinderThread = QThread()
-        hostFinderObject.moveToThread(hostFinderThread)
-        hostFinderThread.started.connect(hostFinderObject.run)
-        hostFinderObject.finished.connect(lambda: self.updateAvailableHosts(hostFinderObject.availableHosts))
-        hostFinderObject.finished.connect(hostFinderThread.quit)
-        hostFinderObject.finished.connect(hostFinderObject.deleteLater)
+        print("Moving to thread")
+        self.hostFinderObject.moveToThread(hostFinderThread)
+
+        print("Connecting signals")
+        hostFinderThread.started.connect(self.hostFinderObject.run)
+        self.hostFinderObject.foundHosts.connect(self.updateAvailableHosts)
+        self.hostFinderObject.finished.connect(hostFinderThread.quit)
+        self.hostFinderObject.finished.connect(self.hostFinderObject.deleteLater)
         hostFinderThread.finished.connect(hostFinderThread.deleteLater)
         return hostFinderThread
 
     def setupMenu(self):
+        print("Creating lists")
         self.createVotingList()
         self.createActionList()
 

@@ -11,5 +11,7 @@ class PeerDetector:
 
     def getHostsInLocalNetwork(self):
         nmapInstance = nmap.PortScanner()
+        print("Running scan")
         nmapInstance.scan(hosts='%s/24' % (self.getLocalhostAddress()), arguments='-sn')
+        print("Scanning hosts in local network done")
         return nmapInstance.all_hosts()
