@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (QVBoxLayout, QListWidget,
     QAction, QLabel, QListView, QWidget)
 from PyQt5.QtCore import QStringListModel, QObject, pyqtSignal, QThread
 from PeerDetector import PeerDetector
-frin MessageReceiver import MessageReceiver
+from MessageReceiver import MessageReceiver
 
 class HostFinder(QObject):
     finished = pyqtSignal()
@@ -31,19 +31,20 @@ class Menu(QMainWindow):
         print("Setting up menu")
         self.setupMenu()
 
+        print("Creating receiver service")
+        self.receiverService = self.createReceiverService()
+
         print("creating host finder thread")
         self.hostFinder = self.createHostFinderThread()
 
         print("Running host finder")
         self.hostFinder.start()
 
-        print("Creating receiver service")
-        self.receiverService = self.createReceiverService()
-        print("Running receiver service")
-        self.receiverService.start()
+        #print("Running receiver service")
 
     def updateAvailableHosts(self, givenHosts):
         self.availableHosts = givenHosts
+        self.messageReceiverObject.availableHosts = self.availableHosts
 
     def createReceiverService(self):
         self.messageReceiverObject = MessageReceiver()
@@ -52,8 +53,8 @@ class Menu(QMainWindow):
         self.messageReceiverObject.moveToThread(messageReceiverThread)
 
         print("Connecting signals for message receiver")
-        messageReceiverThread.started.connect(self.messageReceiverObject.run)
-        self.messageReceiverObject.foundHosts.connect(self.updateAvailableHosts)
+        messageReceiverThread.started.connect(self.messageReceiverObject.runReceiver)
+        self.messageReceiverObject.updatedHosts.connect(self.updateAvailableHosts)
         self.messageReceiverObject.finished.connect(messageReceiverThread.quit)
         self.messageReceiverObject.finished.connect(self.messageReceiverObject.deleteLater)
         messageReceiverThread.finished.connect(messageReceiverThread.deleteLater)
@@ -68,6 +69,7 @@ class Menu(QMainWindow):
         print("Connecting signals")
         hostFinderThread.started.connect(self.hostFinderObject.run)
         self.hostFinderObject.foundHosts.connect(self.updateAvailableHosts)
+        self.hostFinderObject.finished.connect(self.receiverService.start)
         self.hostFinderObject.finished.connect(hostFinderThread.quit)
         self.hostFinderObject.finished.connect(self.hostFinderObject.deleteLater)
         hostFinderThread.finished.connect(hostFinderThread.deleteLater)
