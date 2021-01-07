@@ -4,19 +4,8 @@ from PyQt5.QtWidgets import (QVBoxLayout, QListWidget,
 from PyQt5.QtCore import QStringListModel, QObject, pyqtSignal, QThread
 from PeerDetector import PeerDetector
 from MessageReceiver import MessageReceiver
-
-class HostFinder(QObject):
-    finished = pyqtSignal()
-    foundHosts = pyqtSignal(list)
-    availableHosts = []
-    print("Host Finder created")
-
-    def run(self):
-        print("Running run method and starting detector")
-        self.detector = PeerDetector()
-        self.availableHosts = self.detector.getHostsInLocalNetwork()
-        self.foundHosts.emit(self.availableHosts)
-        self.finished.emit()
+from HostFinder import HostFinder
+from NewHostHandler import NewHostHandler
 
 class Menu(QMainWindow):
     def __init__(self, parent=None):
@@ -34,17 +23,28 @@ class Menu(QMainWindow):
         print("Creating receiver service")
         self.receiverService = self.createReceiverService()
 
-        print("creating host finder thread")
+        print("Creating host finder thread")
         self.hostFinder = self.createHostFinderThread()
+
+        print("Creating new host handler thread")
+        self.newHostHandler = self.createNewHostHandlerThread()
 
         print("Running host finder")
         self.hostFinder.start()
-
+        print("Running new host handler")
+        self.newHostHandler.start()
         #print("Running receiver service")
 
     def updateAvailableHosts(self, givenHosts):
         self.availableHosts = givenHosts
+        try:
+            self.availableHosts.remove(self.localhostAddress)
+        except:
+            pass
         self.messageReceiverObject.availableHosts = self.availableHosts
+
+    def addAddressToAvailableHosts(self, address):
+        self.availableHosts.append(address)
 
     def createReceiverService(self):
         self.messageReceiverObject = MessageReceiver()
@@ -59,6 +59,20 @@ class Menu(QMainWindow):
         self.messageReceiverObject.finished.connect(self.messageReceiverObject.deleteLater)
         messageReceiverThread.finished.connect(messageReceiverThread.deleteLater)
         return messageReceiverThread
+
+    def createNewHostHandlerThread(self):
+        self.newHostHandlerObject = NewHostHandler()
+        newHostHandlerThread = QThread()
+        print("Moving to thread")
+        self.newHostHandlerObject.moveToThread(newHostHandlerThread)
+
+        print("Connecting signals")
+        newHostHandlerThread.started.connect(self.newHostHandlerObject.runServer)
+        self.newHostHandlerObject.newHost.connect(self.addAddressToAvailableHosts)
+        self.newHostHandlerObject.finished.connect(newHostHandlerThread.quit)
+        self.newHostHandlerObject.finished.connect(self.newHostHandlerObject.deleteLater)
+        newHostHandlerThread.finished.connect(newHostHandlerThread.deleteLater)
+        return newHostHandlerThread
 
     def createHostFinderThread(self):
         self.hostFinderObject = HostFinder()
@@ -124,7 +138,6 @@ class Menu(QMainWindow):
         box.setText("Searching for available hosts may take a while.\nPlease wait.")
         box.exec_()
 
-
     def showAboutBox(self):
         box = QMessageBox()
         box.setWindowTitle("About votePy")
@@ -144,10 +157,12 @@ class Menu(QMainWindow):
         aboutButton.clicked.connect(self.showAboutBox)
 
         detector = PeerDetector()
-        ipLabel = QLabel("My host IP address: %s" % (detector.getLocalhostAddress()))
+        self.localhostAddress = detector.getLocalhostAddress()
+        ipLabel = QLabel("My host IP address: %s" % (self.localhostAddress))
         layout = QVBoxLayout()
         layout.addWidget(newVoteButton)
         layout.addWidget(showParticipantsButton)
+        layout.addWidget(exitButton)
         layout.addWidget(aboutButton)
         layout.addWidget(ipLabel)
         layout.addStretch(1)

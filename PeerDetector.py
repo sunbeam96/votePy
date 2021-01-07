@@ -1,12 +1,11 @@
 import socket
-import logging
 import nmap
 
 class PeerDetector:
     def getLocalhostAddress(self):
         hostname = socket.gethostname()
         ipAddr = socket.gethostbyname(hostname)
-        logging.info("Got localhost %s address of %s" % (hostname, ipAddr))
+        print("Got localhost %s address of %s" % (hostname, ipAddr))
         return ipAddr
 
     def getHostsInLocalNetwork(self):
