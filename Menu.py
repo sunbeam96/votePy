@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (QVBoxLayout, QListWidget,
     QPushButton, QGroupBox, QGridLayout, QMainWindow, QMessageBox,
-    QAction, QLabel, QListView, QWidget, QDialog)
+    QAction, QLabel, QListView, QWidget, QDialog, QLineEdit)
 from PyQt5.QtCore import QStringListModel, QObject, pyqtSignal, QThread
 from PeerDetector import PeerDetector
 from MessageReceiver import MessageReceiver
@@ -13,31 +13,20 @@ class Menu(QMainWindow):
         super(Menu, self).__init__(parent)
 
         self.availableHosts = []
-        
-        print("Show loading box")
-
         self.showLoadingBox()
 
         print("Setting up menu")
         self.setupMenu()
 
-        print("Creating registration handler thread")
+        print("Creating services")
         self.registrationHandler = self.createRegistrationHandlerThread()
-
-        print("Creating receiver service")
         self.receiverService = self.createReceiverService()
-
-        print("Creating host finder thread")
         self.hostFinder = self.createHostFinderThread()
-
-        print("Creating new host handler thread")
         self.newHostHandler = self.createNewHostHandlerThread()
 
-        print("Running host finder")
+        print("Running services")
         self.hostFinder.start()
-        print("Running new host handler")
         self.newHostHandler.start()
-        #print("Running receiver service")
 
     def updateHostsToNotify(self):
         self.registrationHandlerObject.updateHostsToNotify(self.availableHosts)
@@ -56,10 +45,8 @@ class Menu(QMainWindow):
     def createRegistrationHandlerThread(self):
         self.registrationHandlerObject = RegistrationHandler()
         registrationHandlerThread = QThread()
-        print("Moving registration handler to thread")
         self.registrationHandlerObject.moveToThread(registrationHandlerThread)
 
-        print("Connecting signals for registration handler")
         registrationHandlerThread.started.connect(self.registrationHandlerObject.runRegistration)
         self.registrationHandlerObject.finished.connect(registrationHandlerThread.quit)
         self.registrationHandlerObject.finished.connect(self.registrationHandlerObject.deleteLater)
@@ -69,10 +56,8 @@ class Menu(QMainWindow):
     def createReceiverService(self):
         self.messageReceiverObject = MessageReceiver()
         messageReceiverThread = QThread()
-        print("Moving message receiver to thread")
         self.messageReceiverObject.moveToThread(messageReceiverThread)
 
-        print("Connecting signals for message receiver")
         messageReceiverThread.started.connect(self.messageReceiverObject.runReceiver)
         self.messageReceiverObject.updatedHosts.connect(self.updateAvailableHosts)
         self.messageReceiverObject.updatedHosts.connect(self.updateHostsToNotify)
@@ -85,10 +70,8 @@ class Menu(QMainWindow):
     def createNewHostHandlerThread(self):
         self.newHostHandlerObject = NewHostHandler()
         newHostHandlerThread = QThread()
-        print("Moving to thread")
         self.newHostHandlerObject.moveToThread(newHostHandlerThread)
 
-        print("Connecting signals")
         newHostHandlerThread.started.connect(self.newHostHandlerObject.runServer)
         self.newHostHandlerObject.newHost.connect(self.addAddressToAvailableHosts)
         self.newHostHandlerObject.finished.connect(newHostHandlerThread.quit)
@@ -99,10 +82,8 @@ class Menu(QMainWindow):
     def createHostFinderThread(self):
         self.hostFinderObject = HostFinder()
         hostFinderThread = QThread()
-        print("Moving to thread")
         self.hostFinderObject.moveToThread(hostFinderThread)
 
-        print("Connecting signals")
         hostFinderThread.started.connect(self.hostFinderObject.run)
         self.hostFinderObject.foundHosts.connect(self.updateAvailableHosts)
         self.hostFinderObject.finished.connect(self.receiverService.start)
@@ -112,7 +93,6 @@ class Menu(QMainWindow):
         return hostFinderThread
 
     def setupMenu(self):
-        print("Creating lists")
         self.createVotingList()
         self.createActionList()
 
@@ -160,26 +140,52 @@ class Menu(QMainWindow):
         box.setText("No hosts are available or search is pending.\nPlease wait.")
         box.exec_()
 
+    def addVotingOption(self):
+        voteOptionEdit = QLineEdit()
+        self.voteOptions.append(voteOptionEdit)
+        self.rightVoteBoxLayout.addWidget(self.voteOptions[-1])
+
     def runNewVote(self):
-        if len(self.availableHosts) == 0:
-            self.showNoHostsBox()
-            return
+        # if len(self.availableHosts) == 0:
+        #     self.showNoHostsBox()
+        #     return
+
         self.newVoteDialog = QDialog()
         self.newVoteDialog.setWindowTitle("Create voting")
+        self.voteOptions = []
 
         createVotingButton = QPushButton("Create voting")
-        #newVoteButton.clicked.connect(self.runNewVote)
 
         cancelNewVotingButton = QPushButton("Cancel")
         cancelNewVotingButton.setDefault(True)
         cancelNewVotingButton.clicked.connect(self.newVoteDialog.close)
 
-        layout = QVBoxLayout()
-        layout.addWidget(createVotingButton)
-        layout.addWidget(cancelNewVotingButton)
-        layout.setStretch(1, 1)
-        self.newVoteDialog.setLayout(layout)
+        votingNameEdit = QLineEdit()
+        votingNameLabel = QLabel("Enter voting name:")
 
+        voteOptionsLabel = QLabel("Enter voting options:")
+
+        addVoteOptionButton = QPushButton("Add vote option")
+        addVoteOptionButton.clicked.connect(self.addVotingOption)
+
+        self.rightVoteBox = QGroupBox("Voting creator")
+        self.rightVoteBoxLayout = QVBoxLayout()
+        self.rightVoteBoxLayout.addWidget(votingNameLabel)
+        self.rightVoteBoxLayout.addWidget(votingNameEdit)
+        self.rightVoteBoxLayout.addWidget(voteOptionsLabel)
+        self.rightVoteBox.setLayout(self.rightVoteBoxLayout)
+
+        self.leftVoteBox = QGroupBox("Actions")
+        self.leftVoteBoxLayout = QVBoxLayout()
+        self.leftVoteBoxLayout.addWidget(createVotingButton)
+        self.leftVoteBoxLayout.addWidget(cancelNewVotingButton)
+        self.leftVoteBoxLayout.addWidget(addVoteOptionButton)
+        self.leftVoteBox.setLayout(self.leftVoteBoxLayout)
+
+        layout = QGridLayout()
+        layout.addWidget(self.leftVoteBox, 0, 0)
+        layout.addWidget(self.rightVoteBox, 0, 1)
+        self.newVoteDialog.setLayout(layout)
         self.newVoteDialog.exec_()
 
     def showLoadingBox(self):
