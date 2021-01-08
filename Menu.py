@@ -1,11 +1,12 @@
 from PyQt5.QtWidgets import (QVBoxLayout, QListWidget,
     QPushButton, QGroupBox, QGridLayout, QMainWindow, QMessageBox,
-    QAction, QLabel, QListView, QWidget)
+    QAction, QLabel, QListView, QWidget, QDialog)
 from PyQt5.QtCore import QStringListModel, QObject, pyqtSignal, QThread
 from PeerDetector import PeerDetector
 from MessageReceiver import MessageReceiver
 from HostFinder import HostFinder
 from NewHostHandler import NewHostHandler
+from RegistrationHandler import RegistrationHandler
 
 class Menu(QMainWindow):
     def __init__(self, parent=None):
@@ -19,6 +20,9 @@ class Menu(QMainWindow):
 
         print("Setting up menu")
         self.setupMenu()
+
+        print("Creating registration handler thread")
+        self.registrationHandler = self.createRegistrationHandlerThread()
 
         print("Creating receiver service")
         self.receiverService = self.createReceiverService()
@@ -35,6 +39,9 @@ class Menu(QMainWindow):
         self.newHostHandler.start()
         #print("Running receiver service")
 
+    def updateHostsToNotify(self):
+        self.registrationHandlerObject.updateHostsToNotify(self.availableHosts)
+
     def updateAvailableHosts(self, givenHosts):
         self.availableHosts = givenHosts
         try:
@@ -46,6 +53,19 @@ class Menu(QMainWindow):
     def addAddressToAvailableHosts(self, address):
         self.availableHosts.append(address)
 
+    def createRegistrationHandlerThread(self):
+        self.registrationHandlerObject = RegistrationHandler()
+        registrationHandlerThread = QThread()
+        print("Moving registration handler to thread")
+        self.registrationHandlerObject.moveToThread(registrationHandlerThread)
+
+        print("Connecting signals for registration handler")
+        registrationHandlerThread.started.connect(self.registrationHandlerObject.runRegistration)
+        self.registrationHandlerObject.finished.connect(registrationHandlerThread.quit)
+        self.registrationHandlerObject.finished.connect(self.registrationHandlerObject.deleteLater)
+        registrationHandlerThread.finished.connect(registrationHandlerThread.deleteLater)
+        return registrationHandlerThread
+
     def createReceiverService(self):
         self.messageReceiverObject = MessageReceiver()
         messageReceiverThread = QThread()
@@ -55,6 +75,8 @@ class Menu(QMainWindow):
         print("Connecting signals for message receiver")
         messageReceiverThread.started.connect(self.messageReceiverObject.runReceiver)
         self.messageReceiverObject.updatedHosts.connect(self.updateAvailableHosts)
+        self.messageReceiverObject.updatedHosts.connect(self.updateHostsToNotify)
+        self.messageReceiverObject.updatedHosts.connect(self.registrationHandler.start)
         self.messageReceiverObject.finished.connect(messageReceiverThread.quit)
         self.messageReceiverObject.finished.connect(self.messageReceiverObject.deleteLater)
         messageReceiverThread.finished.connect(messageReceiverThread.deleteLater)
@@ -132,6 +154,34 @@ class Menu(QMainWindow):
         layout.addStretch(1)
         self.leftBox.setLayout(layout)
 
+    def showNoHostsBox(self):
+        box = QMessageBox()
+        box.setWindowTitle("Action not available")
+        box.setText("No hosts are available or search is pending.\nPlease wait.")
+        box.exec_()
+
+    def runNewVote(self):
+        if len(self.availableHosts) == 0:
+            self.showNoHostsBox()
+            return
+        self.newVoteDialog = QDialog()
+        self.newVoteDialog.setWindowTitle("Create voting")
+
+        createVotingButton = QPushButton("Create voting")
+        #newVoteButton.clicked.connect(self.runNewVote)
+
+        cancelNewVotingButton = QPushButton("Cancel")
+        cancelNewVotingButton.setDefault(True)
+        cancelNewVotingButton.clicked.connect(self.newVoteDialog.close)
+
+        layout = QVBoxLayout()
+        layout.addWidget(createVotingButton)
+        layout.addWidget(cancelNewVotingButton)
+        layout.setStretch(1, 1)
+        self.newVoteDialog.setLayout(layout)
+
+        self.newVoteDialog.exec_()
+
     def showLoadingBox(self):
         box = QMessageBox()
         box.setWindowTitle("Starting votePy")
@@ -149,6 +199,7 @@ class Menu(QMainWindow):
 
         newVoteButton = QPushButton("New voting")
         newVoteButton.setDefault(True)
+        newVoteButton.clicked.connect(self.runNewVote)
 
         showParticipantsButton = QPushButton("Show participants")
         showParticipantsButton.clicked.connect(self.showAvailableHosts)
@@ -162,7 +213,6 @@ class Menu(QMainWindow):
         layout = QVBoxLayout()
         layout.addWidget(newVoteButton)
         layout.addWidget(showParticipantsButton)
-        layout.addWidget(exitButton)
         layout.addWidget(aboutButton)
         layout.addWidget(ipLabel)
         layout.addStretch(1)
