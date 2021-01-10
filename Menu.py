@@ -4,15 +4,18 @@ from PyQt5.QtWidgets import (QVBoxLayout, QListWidget,
 from PyQt5.QtCore import QStringListModel, QObject, pyqtSignal, QThread
 from PeerDetector import PeerDetector
 from MessageReceiver import MessageReceiver
+from MessageSender import MessageSender
 from HostFinder import HostFinder
 from NewHostHandler import NewHostHandler
 from RegistrationHandler import RegistrationHandler
+from Voting import Voting
 
 class Menu(QMainWindow):
     def __init__(self, parent=None):
         super(Menu, self).__init__(parent)
 
         self.availableHosts = []
+        self.ongoingVotings = []
         self.showLoadingBox()
 
         print("Setting up menu")
@@ -23,6 +26,8 @@ class Menu(QMainWindow):
         self.receiverService = self.createReceiverService()
         self.hostFinder = self.createHostFinderThread()
         self.newHostHandler = self.createNewHostHandlerThread()
+
+        self.messageSender = MessageSender(6969)
 
         print("Running services")
         self.hostFinder.start()
@@ -140,10 +145,43 @@ class Menu(QMainWindow):
         box.setText("No hosts are available or search is pending.\nPlease wait.")
         box.exec_()
 
+    def showInvalidParametersBox(self):
+        box = QMessageBox()
+        box.setWindowTitle("Invalid parameters")
+        box.setText("Invalid parameters inserted. Cannot proceed.")
+        box.exec_()
+
+    def showVotingCreatedBox(self):
+        box = QMessageBox()
+        box.setWindowTitle("Voting created")
+        box.setText("New voting created.")
+        box.exec_()
+
+    def removeVotingOption(self):
+        self.rightVoteBoxLayout.removeWidget(self.voteOptions[-1])
+        self.voteOptions.pop()
+
     def addVotingOption(self):
         voteOptionEdit = QLineEdit()
         self.voteOptions.append(voteOptionEdit)
         self.rightVoteBoxLayout.addWidget(self.voteOptions[-1])
+
+    def createVotingButtonAction(self):
+        options = []
+        for option in self.voteOptions:
+            options.append(option.text())
+        voting = Voting(self.votingNameEdit.text(), options)
+        voting.myVote = self.yourChoiceEdit.text()
+
+        self.ongoingVotings.append(voting)
+
+        self.messageSender.sendVotingMsg(voting)
+        self.voteOptions.clear()
+
+        print(voting.votingName)
+        print(voting.myVote)
+        print(voting.votingOptions)
+        print(voting.votes)
 
     def runNewVote(self):
         # if len(self.availableHosts) == 0:
@@ -154,24 +192,34 @@ class Menu(QMainWindow):
         self.newVoteDialog.setWindowTitle("Create voting")
         self.voteOptions = []
 
+        self.votingNameEdit = QLineEdit()
+        votingNameLabel = QLabel("Enter voting name:")
+
+        self.yourChoiceEdit = QLineEdit()
+        yourChoiceLabel = QLabel("Your choice (has to match option from below):")
+
         createVotingButton = QPushButton("Create voting")
+        createVotingButton.clicked.connect(self.createVotingButtonAction)
 
         cancelNewVotingButton = QPushButton("Cancel")
         cancelNewVotingButton.setDefault(True)
         cancelNewVotingButton.clicked.connect(self.newVoteDialog.close)
 
-        votingNameEdit = QLineEdit()
-        votingNameLabel = QLabel("Enter voting name:")
 
         voteOptionsLabel = QLabel("Enter voting options:")
 
         addVoteOptionButton = QPushButton("Add vote option")
         addVoteOptionButton.clicked.connect(self.addVotingOption)
 
+        removeVoteOptionButton = QPushButton("Remove vote option")
+        removeVoteOptionButton.clicked.connect(self.removeVotingOption)
+
         self.rightVoteBox = QGroupBox("Voting creator")
         self.rightVoteBoxLayout = QVBoxLayout()
         self.rightVoteBoxLayout.addWidget(votingNameLabel)
-        self.rightVoteBoxLayout.addWidget(votingNameEdit)
+        self.rightVoteBoxLayout.addWidget(self.votingNameEdit)
+        self.rightVoteBoxLayout.addWidget(yourChoiceLabel)
+        self.rightVoteBoxLayout.addWidget(self.yourChoiceEdit)
         self.rightVoteBoxLayout.addWidget(voteOptionsLabel)
         self.rightVoteBox.setLayout(self.rightVoteBoxLayout)
 
@@ -180,6 +228,7 @@ class Menu(QMainWindow):
         self.leftVoteBoxLayout.addWidget(createVotingButton)
         self.leftVoteBoxLayout.addWidget(cancelNewVotingButton)
         self.leftVoteBoxLayout.addWidget(addVoteOptionButton)
+        self.leftVoteBoxLayout.addWidget(removeVoteOptionButton)
         self.leftVoteBox.setLayout(self.leftVoteBoxLayout)
 
         layout = QGridLayout()
