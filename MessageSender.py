@@ -15,4 +15,11 @@ class MessageSender:
     def sendVotingMsg(self, voting):
         messageData = "votingUpdate;"
         messageData += voting.votingName
-        
+        messageData += ";"
+        for option in voting.votes:
+            messageData += option # adding key - voting option name
+            messageData += ";"
+            messageData += voting.votes[option] # adding value - number of votes for this option
+            messageData += ";"
+        self.sendMessage(messageData)
+

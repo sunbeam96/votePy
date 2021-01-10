@@ -3,11 +3,11 @@ class Voting:
     myVote = ""
     def __init__(self, name, options):
         self.votingName = name
-        self.votingOptions = options
-        self.votes = {}
-        self.createVotingList()
+        self.votes = self.createVotingList(options)        
 
     def createVotingList(self):
-        for option in self.votingOptions:
+        votingOptions = {}
+        for option in votingOptions:
             self.votes["%s" % option] = "0"
+        return votingOptions
 

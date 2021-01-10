@@ -168,8 +168,15 @@ class Menu(QMainWindow):
 
     def createVotingButtonAction(self):
         options = []
+        choiceMatchesOptions = False
         for option in self.voteOptions:
+            if (option.text() == self.yourChoiceEdit.text()):
+                choiceMatchesOptions = True
             options.append(option.text())
+        
+        if not choiceMatchesOptions:
+            self.showInvalidParametersBox()
+            return
         voting = Voting(self.votingNameEdit.text(), options)
         voting.myVote = self.yourChoiceEdit.text()
 
