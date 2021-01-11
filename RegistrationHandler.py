@@ -31,6 +31,9 @@ class RegistrationHandler(QObject):
         print("Running registration on %s hosts" % len(self.hostsToNotify))
         if len(self.hostsToNotify) != 0:
             for host in self.hostsToNotify:
+                if (host == localhostIpAddress):
+                    self.hostsToRemove.append(host)
+                    continue
                 self.socket.connect("tcp://%s:6968" % host)
                 print("Sending registration message")
                 self.socket.send_string(localhostIpAddress)
