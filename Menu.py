@@ -56,6 +56,10 @@ class Menu(QMainWindow):
         self.messageReceiverObject.availableHosts = self.availableHosts
 
     def addAddressToAvailableHosts(self, address):
+        for element in self.availableHosts:
+            if element == address:
+                print("The address is already present")
+                return
         self.availableHosts.append(address)
 
     def createRegistrationHandlerThread(self):
