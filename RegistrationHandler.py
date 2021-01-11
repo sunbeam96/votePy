@@ -31,6 +31,7 @@ class RegistrationHandler(QObject):
         print("Running registration on %s hosts" % len(self.hostsToNotify))
         if len(self.hostsToNotify) != 0:
             for host in self.hostsToNotify:
+                print("Trying %s" % host)
                 if (host == localhostIpAddress):
                     self.hostsToRemove.append(host)
                     continue
