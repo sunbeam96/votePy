@@ -10,7 +10,7 @@ class MessageSender:
 
     def sendMessage(self, messageData):
         print("Sending message")
-        self.socket.send("%d" % (messageData))
+        self.socket.send_string("%s" % (messageData))
 
     def sendVotingMsg(self, voting):
         messageData = "votingUpdate;"
@@ -19,7 +19,7 @@ class MessageSender:
         for option in voting.votes:
             messageData += option # adding key - voting option name
             messageData += "_;"
-            messageData += voting.votes[option] # adding value - number of votes for this option
+            messageData += str(voting.votes[option]) # adding value - number of votes for this option
             messageData += ";"
         self.sendMessage(messageData)
 

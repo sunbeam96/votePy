@@ -145,7 +145,9 @@ class Menu(QMainWindow):
                 updatedVoting = ongoingVoting
         for option in updatedVoting.votes:
             if option == selectedVotingOption:
-                updatedVoting.votes[option] += 1
+                votesNumber = int(updatedVoting.votes[option])
+                votesNumber += 1
+                updatedVoting.votes[option] = votesNumber
                 updatedVoting.myVote = option
         self.updateVotings(updatedVoting)
         self.messageSender.sendVotingMsg(updatedVoting)
@@ -162,6 +164,7 @@ class Menu(QMainWindow):
                     self.optionsList.addItem(option)
 
         self.optionsList.itemDoubleClicked.connect(self.votingOptionChoosedAction)
+        self.optionsList.itemDoubleClicked.connect(self.votingWindow.close)
 
         layout = QGridLayout()
         layout.addWidget(self.optionsList, 0, 0)
@@ -174,8 +177,8 @@ class Menu(QMainWindow):
 
         for ongoingVoting in self.ongoingVotings:
             if ongoingVoting.votingName == votingName:
-                for option in ongoingVoting:
-                    self.resultsList.addItem("%s: %s" % (option, ongoingVoting[option]))
+                for option in ongoingVoting.votes:
+                    self.resultsList.addItem("%s: %s" % (option, ongoingVoting.votes[option]))
 
         layout = QGridLayout()
         layout.addWidget(self.resultsList, 0, 0)
@@ -239,13 +242,13 @@ class Menu(QMainWindow):
 
     def createVotingButtonAction(self):
         options = []
-        choiceMatchesOptions = False
         for option in self.voteOptions:
-            if (option.text() == self.yourChoiceEdit.text()):
-                choiceMatchesOptions = True
+            if not option.text():
+                self.showInvalidParametersBox()
+                return
             options.append(option.text())
         
-        if not choiceMatchesOptions:
+        if not self.votingNameEdit.text():
             self.showInvalidParametersBox()
             return
         voting = Voting()
@@ -253,18 +256,14 @@ class Menu(QMainWindow):
         voting.votingName = self.votingNameEdit.text()
 
         self.ongoingVotings.append(voting)
-
         self.messageSender.sendVotingMsg(voting)
         self.voteOptions.clear()
-
-        print(voting.votingName)
-        print(voting.myVote)
-        print(voting.votes)
+        self.updateVotingListWidget()
 
     def runNewVote(self):
-        if len(self.availableHosts) == 0:
-            self.showNoHostsBox()
-            return
+        # if len(self.availableHosts) == 0:
+        #     self.showNoHostsBox()
+        #     return
 
         self.newVoteDialog = QDialog()
         self.newVoteDialog.setWindowTitle("Create voting")
@@ -280,7 +279,6 @@ class Menu(QMainWindow):
         cancelNewVotingButton.setDefault(True)
         cancelNewVotingButton.clicked.connect(self.newVoteDialog.close)
 
-
         voteOptionsLabel = QLabel("Enter voting options:")
 
         addVoteOptionButton = QPushButton("Add vote option")
@@ -293,6 +291,7 @@ class Menu(QMainWindow):
         self.rightVoteBoxLayout = QVBoxLayout()
         self.rightVoteBoxLayout.addWidget(votingNameLabel)
         self.rightVoteBoxLayout.addWidget(self.votingNameEdit)
+        self.rightVoteBoxLayout.addWidget(voteOptionsLabel)
         self.rightVoteBox.setLayout(self.rightVoteBoxLayout)
 
         self.leftVoteBox = QGroupBox("Actions")
