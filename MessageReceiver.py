@@ -47,10 +47,12 @@ class MessageReceiver(QObject):
         votingName = ""
         voteOptions = {}
         for element in splitMsg:
-            processedKey = ""
-            if messageData.index(element) == 0:
+            if not element:
                 continue
-            elif messageData.index(element) == 1:
+            processedKey = ""
+            if splitMsg.index(element) == 0:
+                continue
+            elif splitMsg.index(element) == 1:
                 votingName = element
             elif "_" in element:
                 key = element.replace("_", "")
