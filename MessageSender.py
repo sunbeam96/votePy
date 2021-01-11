@@ -18,7 +18,7 @@ class MessageSender:
         messageData += ";"
         for option in voting.votes:
             messageData += option # adding key - voting option name
-            messageData += ";"
+            messageData += "_;"
             messageData += voting.votes[option] # adding value - number of votes for this option
             messageData += ";"
         self.sendMessage(messageData)

@@ -36,6 +36,15 @@ class Menu(QMainWindow):
     def updateHostsToNotify(self):
         self.registrationHandlerObject.updateHostsToNotify(self.availableHosts)
 
+    def updateVotings(self, updatedVoting):
+        isNew = True
+        for voting in self.ongoingVotings:
+            if voting.votingName == updatedVoting.votingName:
+                voting.votes = updatedVoting.votes
+                isNew = False
+        if isNew:
+            self.ongoingVotings.append(updatedVoting)
+
     def updateAvailableHosts(self, givenHosts):
         self.availableHosts = givenHosts
         try:
@@ -67,6 +76,7 @@ class Menu(QMainWindow):
         self.messageReceiverObject.updatedHosts.connect(self.updateAvailableHosts)
         self.messageReceiverObject.updatedHosts.connect(self.updateHostsToNotify)
         self.messageReceiverObject.updatedHosts.connect(self.registrationHandler.start)
+        self.messageReceiverObject.votingUpdate.connect(self.updateVotings)
         self.messageReceiverObject.finished.connect(messageReceiverThread.quit)
         self.messageReceiverObject.finished.connect(self.messageReceiverObject.deleteLater)
         messageReceiverThread.finished.connect(messageReceiverThread.deleteLater)
@@ -126,16 +136,77 @@ class Menu(QMainWindow):
         self.hostsView.setModel(model)
         self.hostsView.show()
 
+    def votingOptionChoosedAction(self):
+        updatedVoting = Voting()
+        selectedVotingName = self.votingListWidget.currentItem().text()
+        selectedVotingOption = self.optionsList.currentItem().text()
+        for ongoingVoting in self.ongoingVotings:
+            if selectedVotingName == ongoingVoting.votingName:
+                updatedVoting = ongoingVoting
+        for option in updatedVoting.votes:
+            if option == selectedVotingOption:
+                updatedVoting.votes[option] += 1
+                updatedVoting.myVote = option
+        self.updateVotings(updatedVoting)
+        self.messageSender.sendVotingMsg(updatedVoting)
+
+    def runVotingWindow(self, votingName):
+        self.votingWindow = QDialog()
+        self.votingWindow.setWindowTitle("Voting")
+
+        self.optionsList = QListWidget()
+
+        for ongoingVoting in self.ongoingVotings:
+            if votingName == ongoingVoting.votingName:
+                for option in ongoingVoting.votes:
+                    self.optionsList.addItem(option)
+
+        self.optionsList.itemDoubleClicked.connect(self.votingOptionChoosedAction)
+
+        layout = QGridLayout()
+        layout.addWidget(self.optionsList, 0, 0)
+        self.votingWindow.setLayout(layout)
+        self.votingWindow.exec_()
+
+    def showVotingResults(self, votingName):
+        self.resultsWindow = QDialog()
+        self.resultsList = QListWidget()
+
+        for ongoingVoting in self.ongoingVotings:
+            if ongoingVoting.votingName == votingName:
+                for option in ongoingVoting:
+                    self.resultsList.addItem("%s: %s" % (option, ongoingVoting[option]))
+
+        layout = QGridLayout()
+        layout.addWidget(self.resultsList, 0, 0)
+        self.resultsWindow.setLayout(layout)
+        self.resultsWindow.exec_()
+
+    def handleExistingVoting(self):
+        selectedVotingName = self.votingListWidget.currentItem().text()
+        for ongoingVoting in self.ongoingVotings:
+            if selectedVotingName == ongoingVoting.votingName:
+                if not ongoingVoting.myVote:
+                    self.runVotingWindow(selectedVotingName)
+                else:
+                    self.showVotingResults(selectedVotingName)
+
+    def updateVotingListWidget(self):
+        self.votingListWidget.clear()
+        for element in self.ongoingVotings:
+            self.votingListWidget.addItem(element.votingName)
+
     def findAvailableHosts(self):
         detector = PeerDetector()
         self.availableHosts = detector.getHostsInLocalNetwork()
 
     def createVotingList(self):
         self.leftBox = QGroupBox("Ongoing votings")
-        listWidget = QListWidget()
+        self.votingListWidget = QListWidget()
+        self.votingListWidget.itemDoubleClicked.connect(self.handleExistingVoting)
 
         layout = QVBoxLayout()
-        layout.addWidget(listWidget)
+        layout.addWidget(self.votingListWidget)
         layout.addStretch(1)
         self.leftBox.setLayout(layout)
 
@@ -177,8 +248,9 @@ class Menu(QMainWindow):
         if not choiceMatchesOptions:
             self.showInvalidParametersBox()
             return
-        voting = Voting(self.votingNameEdit.text(), options)
-        voting.myVote = self.yourChoiceEdit.text()
+        voting = Voting()
+        voting.createNewVoteOptionList(options)
+        voting.votingName = self.votingNameEdit.text()
 
         self.ongoingVotings.append(voting)
 
@@ -187,13 +259,12 @@ class Menu(QMainWindow):
 
         print(voting.votingName)
         print(voting.myVote)
-        print(voting.votingOptions)
         print(voting.votes)
 
     def runNewVote(self):
-        # if len(self.availableHosts) == 0:
-        #     self.showNoHostsBox()
-        #     return
+        if len(self.availableHosts) == 0:
+            self.showNoHostsBox()
+            return
 
         self.newVoteDialog = QDialog()
         self.newVoteDialog.setWindowTitle("Create voting")
@@ -201,9 +272,6 @@ class Menu(QMainWindow):
 
         self.votingNameEdit = QLineEdit()
         votingNameLabel = QLabel("Enter voting name:")
-
-        self.yourChoiceEdit = QLineEdit()
-        yourChoiceLabel = QLabel("Your choice (has to match option from below):")
 
         createVotingButton = QPushButton("Create voting")
         createVotingButton.clicked.connect(self.createVotingButtonAction)
@@ -225,9 +293,6 @@ class Menu(QMainWindow):
         self.rightVoteBoxLayout = QVBoxLayout()
         self.rightVoteBoxLayout.addWidget(votingNameLabel)
         self.rightVoteBoxLayout.addWidget(self.votingNameEdit)
-        self.rightVoteBoxLayout.addWidget(yourChoiceLabel)
-        self.rightVoteBoxLayout.addWidget(self.yourChoiceEdit)
-        self.rightVoteBoxLayout.addWidget(voteOptionsLabel)
         self.rightVoteBox.setLayout(self.rightVoteBoxLayout)
 
         self.leftVoteBox = QGroupBox("Actions")

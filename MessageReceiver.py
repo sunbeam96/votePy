@@ -1,12 +1,13 @@
 import sys
 import zmq
 import socket
-from MessageHandler import MessageHandler
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
-
+from Voting import Voting
+    
 class MessageReceiver(QObject):
     finished = pyqtSignal()
     updatedHosts = pyqtSignal(list)
+    votingUpdate = pyqtSignal(Voting)
     context = zmq.Context()
     socket = context.socket(zmq.SUB)
     socket.subscribe("")
@@ -41,6 +42,27 @@ class MessageReceiver(QObject):
         self.running = False
         self.socket.close()
 
+    def handleVotingMsg(self, messageData):
+        splitMsg = messageData.split(";")
+        votingName = ""
+        voteOptions = {}
+        for element in splitMsg:
+            processedKey = ""
+            if messageData.index(element) == 0:
+                continue
+            elif messageData.index(element) == 1:
+                votingName = element
+            elif "_" in element:
+                key = element.replace("_", "")
+                voteOptions[key] = "0"
+                processedKey = key
+            else:
+                voteOptions[processedKey] = element
+        voting = Voting()
+        voting.votingName = votingName
+        voting.votes = voteOptions
+        self.votingUpdate.emit(voting)
+
     def runReceiver(self):
         self.running = True
 
@@ -49,5 +71,5 @@ class MessageReceiver(QObject):
         print("Running receiver")
         while self.running:
             message = self.socket.recv_string()
-            # handleMessage(message)
+            self.handleVotingMsg(message)
             # logger.info("Received message for %s" % topic)
