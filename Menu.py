@@ -61,6 +61,7 @@ class Menu(QMainWindow):
                 print("The address is already present")
                 return
         self.availableHosts.append(address)
+        self.messageReceiverObject.connectToHost(address, 6969)
 
     def createRegistrationHandlerThread(self):
         self.registrationHandlerObject = RegistrationHandler()
