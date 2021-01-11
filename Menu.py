@@ -28,7 +28,6 @@ class Menu(QMainWindow):
         self.newHostHandler = self.createNewHostHandlerThread()
 
         self.messageSender = MessageSender(6969)
-
         print("Running services")
         self.hostFinder.start()
         self.newHostHandler.start()
@@ -272,7 +271,6 @@ class Menu(QMainWindow):
         if len(self.availableHosts) == 0:
             self.showNoHostsBox()
             return
-
         self.newVoteDialog = QDialog()
         self.newVoteDialog.setWindowTitle("Create voting")
         self.voteOptions = []
@@ -288,7 +286,6 @@ class Menu(QMainWindow):
         cancelNewVotingButton.clicked.connect(self.newVoteDialog.close)
 
         voteOptionsLabel = QLabel("Enter voting options:")
-
         addVoteOptionButton = QPushButton("Add vote option")
         addVoteOptionButton.clicked.connect(self.addVotingOption)
 

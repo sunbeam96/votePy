@@ -67,7 +67,6 @@ class MessageReceiver(QObject):
 
     def runReceiver(self):
         self.running = True
-
         self.connectToAvailableHosts(6969)
 
         print("Running receiver")
