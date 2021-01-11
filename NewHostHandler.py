@@ -26,5 +26,5 @@ class NewHostHandler(QObject):
             message = self.socket.recv_string()
             print("Received info about new host: ", message)
             self.newHost.emit(message)
-            self.socket.send("Received registration message")
+            self.socket.send_string("Received registration message")
         self.finished.emit()
