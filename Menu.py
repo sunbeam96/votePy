@@ -44,6 +44,7 @@ class Menu(QMainWindow):
                 isNew = False
         if isNew:
             self.ongoingVotings.append(updatedVoting)
+        self.updateVotingListWidget()
 
     def updateAvailableHosts(self, givenHosts):
         self.availableHosts = givenHosts
