@@ -261,9 +261,9 @@ class Menu(QMainWindow):
         self.updateVotingListWidget()
 
     def runNewVote(self):
-        # if len(self.availableHosts) == 0:
-        #     self.showNoHostsBox()
-        #     return
+        if len(self.availableHosts) == 0:
+            self.showNoHostsBox()
+            return
 
         self.newVoteDialog = QDialog()
         self.newVoteDialog.setWindowTitle("Create voting")
