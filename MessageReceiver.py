@@ -31,7 +31,7 @@ class MessageReceiver(QObject):
     def connectToHost(self, senderAddress, port):
         print("Connection attempt ongoing")
         try:
-            self.socket.connect((senderAddress, port))
+            self.socket.connect("tcp://%s:%s" % (senderAddress, port))
             print("Connection to tcp://%s:%s established" % (senderAddress, port))
         except:
             self.unavailableHosts.append(senderAddress)
@@ -72,4 +72,4 @@ class MessageReceiver(QObject):
         while self.running:
             message = self.socket.recv_string()
             self.handleVotingMsg(message)
-            # logger.info("Received message for %s" % topic)
+            print("Received message with content: %s" % message)
