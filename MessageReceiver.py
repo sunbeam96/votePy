@@ -46,10 +46,10 @@ class MessageReceiver(QObject):
         splitMsg = messageData.split(";")
         votingName = ""
         voteOptions = {}
+        processedKey = ""
         for element in splitMsg:
             if not element:
                 continue
-            processedKey = ""
             if splitMsg.index(element) == 0:
                 continue
             elif splitMsg.index(element) == 1:
