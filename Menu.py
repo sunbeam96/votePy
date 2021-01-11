@@ -22,8 +22,8 @@ class Menu(QMainWindow):
         self.setupMenu()
 
         print("Creating services")
-        self.registrationHandler = self.createRegistrationHandlerThread()
         self.receiverService = self.createReceiverService()
+        self.registrationHandler = self.createRegistrationHandlerThread()
         self.hostFinder = self.createHostFinderThread()
         self.newHostHandler = self.createNewHostHandlerThread()
 
@@ -52,6 +52,7 @@ class Menu(QMainWindow):
             self.availableHosts.remove(self.localhostAddress)
         except:
             pass
+        self.registrationHandlerObject.hostsToNotify = self.availableHosts
         self.messageReceiverObject.availableHosts = self.availableHosts
 
     def addAddressToAvailableHosts(self, address):
@@ -63,7 +64,9 @@ class Menu(QMainWindow):
         self.registrationHandlerObject.moveToThread(registrationHandlerThread)
 
         registrationHandlerThread.started.connect(self.registrationHandlerObject.runRegistration)
+        self.registrationHandlerObject.updatedHosts.connect(self.updateAvailableHosts)
         self.registrationHandlerObject.finished.connect(registrationHandlerThread.quit)
+        self.registrationHandlerObject.finished.connect(self.receiverService.start)
         self.registrationHandlerObject.finished.connect(self.registrationHandlerObject.deleteLater)
         registrationHandlerThread.finished.connect(registrationHandlerThread.deleteLater)
         return registrationHandlerThread
@@ -76,7 +79,6 @@ class Menu(QMainWindow):
         messageReceiverThread.started.connect(self.messageReceiverObject.runReceiver)
         self.messageReceiverObject.updatedHosts.connect(self.updateAvailableHosts)
         self.messageReceiverObject.updatedHosts.connect(self.updateHostsToNotify)
-        self.messageReceiverObject.updatedHosts.connect(self.registrationHandler.start)
         self.messageReceiverObject.votingUpdate.connect(self.updateVotings)
         self.messageReceiverObject.finished.connect(messageReceiverThread.quit)
         self.messageReceiverObject.finished.connect(self.messageReceiverObject.deleteLater)
@@ -102,7 +104,7 @@ class Menu(QMainWindow):
 
         hostFinderThread.started.connect(self.hostFinderObject.run)
         self.hostFinderObject.foundHosts.connect(self.updateAvailableHosts)
-        self.hostFinderObject.finished.connect(self.receiverService.start)
+        self.hostFinderObject.finished.connect(self.registrationHandler.start)
         self.hostFinderObject.finished.connect(hostFinderThread.quit)
         self.hostFinderObject.finished.connect(self.hostFinderObject.deleteLater)
         hostFinderThread.finished.connect(hostFinderThread.deleteLater)

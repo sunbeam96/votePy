@@ -6,6 +6,7 @@ from PeerDetector import PeerDetector
 
 class RegistrationHandler(QObject):
     finished = pyqtSignal()
+    updatedHosts = pyqtSignal(list)
     hostsToNotify = []
     context = zmq.Context()
     hostsToRemove = []
@@ -41,4 +42,10 @@ class RegistrationHandler(QObject):
                     self.hostsToRemove.append(host)
                 self.resetSocket()
         self.socket.close()
+        for host in self.hostsToRemove:
+            try:
+                self.hostsToNotify.remove(host)
+            except:
+                pass
+        self.updatedHosts.emit(self.hostsToNotify)
         self.finished.emit()
